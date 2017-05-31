@@ -52,8 +52,10 @@ Hookup
 
 .. raw:: html
 
-	<img src="pics/top.jpg" width="150px" align="left">
-	<img src="pics/bottom.jpg" width="150px" align="right">
+	<div style="margin: 10px;">
+	<img src="pics/top.jpg" width="50%" align="left">
+	<img src="pics/bottom.jpg" width="50%" align="right">
+	</div>
 
 `Sparkfun <https://learn.sparkfun.com/tutorials/mpu-9250-hookup-guide>`_ has a
 great guide to get you started, just replace the Arduino C++ with this python
