@@ -53,8 +53,8 @@ Hookup
 .. raw:: html
 
 	<div style="margin: 10px;">
-	<img src="pics/top.jpg" width="50%" align="left">
-	<img src="pics/bottom.jpg" width="50%" align="right">
+	<img src="pics/top.jpg" width="50%">
+	<img src="pics/bottom.jpg" width="50%">
 	</div>
 
 `Sparkfun <https://learn.sparkfun.com/tutorials/mpu-9250-hookup-guide>`_ has a
