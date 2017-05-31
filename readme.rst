@@ -6,7 +6,7 @@ MPU-9250
 	:alt: MPU9250 Image
 
 `Sparkfun <www.sparkfun.com>`_ designed and built this board. They also wrote an `Arduino
-library <https://github.com/sparkfun/MPU-9250_Breakout>`_ for it. 
+library <https://github.com/sparkfun/MPU-9250_Breakout>`_ for it.
 
 I made this python library for use on the Raspberry Pi.
 
@@ -49,6 +49,26 @@ The preferred way to install this library is with ``pip``::
 
 Hookup
 --------
+
+======= ============= =============
+Device  Sensor        I2C Address
+======= ============= =============
+MPU9250 Accels/Gyros  0x68
+AK8963  Magnetometer  0x0C
+======= ============= =============
+
+::
+
+	pi@create mpu9250 $ sudo i2cdetect -y 1
+	     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+	00:          -- -- -- -- -- -- -- -- -- 0c -- -- --
+	10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+	60: -- -- -- -- -- -- -- -- 68 -- -- -- -- -- -- --
+	70: -- -- -- -- -- -- -- --
 
 .. raw:: html
 

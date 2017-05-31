@@ -2,9 +2,9 @@ from __future__ import print_function
 from __future__ import division
 
 try:
-	import smbus
+	import smbus2 as smbus
 except ImportError:
-	# print('WARNING: Using fake hardware')
+	print('WARNING: Using fake hardware')
 	from .fakeHW import smbus
 	# from fake_rpi import smbus
 
@@ -22,6 +22,8 @@ AK8963_ADDRESS  = 0x0C
 DEVICE_ID       = 0x71
 WHO_AM_I        = 0x75
 PWR_MGMT_1      = 0x6B
+INT_PIN_CFG     = 0x37
+INT_ENABLE      = 0x38
 # --- Accel ------------------
 ACCEL_DATA    = 0x3B
 ACCEL_CONFIG  = 0x1C
@@ -79,15 +81,22 @@ class mpu9250(object):
 		if ret is not DEVICE_ID:
 			raise Exception('MPU9250: init failed to find device')
 
-		ret = self.read8(AK8963_ADDRESS, AK_WHO_AM_I)
-		if ret is not AK_DEVICE_ID:
-			raise Exception('AK8963: init failed to find device')
-
 		self.write(MPU9250_ADDRESS, PWR_MGMT_1, 0x00)  # turn sleep mode off
 		sleep(0.2)
 		self.bus.write_byte_data(MPU9250_ADDRESS, PWR_MGMT_1, 0x01)  # auto select clock source
 		self.write(MPU9250_ADDRESS, ACCEL_CONFIG, ACCEL_2G)
 		self.write(MPU9250_ADDRESS, GYRO_CONFIG, GYRO_250DPS)
+
+		# You have to enable the other chips to join the I2C network
+		# then you should see 0x68 and 0x0c from:
+		# sudo i2cdetect -y 1
+		self.write(MPU9250_ADDRESS, INT_PIN_CFG, 0x22)
+		self.write(MPU9250_ADDRESS, INT_ENABLE, 0x01)
+		sleep(0.1)
+
+		ret = self.read8(AK8963_ADDRESS, AK_WHO_AM_I)
+		if ret is not AK_DEVICE_ID:
+			raise Exception('AK8963: init failed to find device')
 		self.write(AK8963_ADDRESS, AK8963_CNTL1, (AK8963_16BIT | AK8963_8HZ))
 
 		# all 3 are set to 16b or 14b readings, we have take half, so one bit is
@@ -97,7 +106,7 @@ class mpu9250(object):
 		self.mlsb = 4800 / 2**15
 
 		# i think i can do this???
-		self.convv = struct.Struct('<hhh')
+		# self.convv = struct.Struct('<hhh')
 
 	def __del__(self):
 		self.bus.close()
@@ -117,25 +126,32 @@ class mpu9250(object):
 		"""
 		Reads x, y, and z axes at once and turns them into a tuple.
 		"""
+		# data is MSB, LSB, MSB, LSB ...
 		data = self.bus.read_i2c_block_data(address, register, 6)
+
+		# data = []
+		# for i in range(6):
+		# 	data.append(self.read8(address, register + i))
+
 		x = self.conv(data[0], data[1]) * lsb
 		y = self.conv(data[2], data[3]) * lsb
 		z = self.conv(data[4], data[5]) * lsb
 
-		print('data', data)
-		ans = self.convv.unpack(data)
-		print('func', x, y, z)
-		print('struct', ans)
+		print('>> data', data)
+		# ans = self.convv.unpack(*data)
+		# ans = struct.unpack('<hhh', data)[0]
+		# print('func', x, y, z)
+		# print('struct', ans)
 
 		return (x, y, z)
 
-	def conv(self, lsb, msb):
+	def conv(self, msb, lsb):
 		"""
 		http://stackoverflow.com/questions/26641664/twos-complement-of-hex-number-in-python
 		"""
 		value = lsb | (msb << 8)
-		if value >= (1 << 15):
-			value -= (1 << 15)
+		# if value >= (1 << 15):
+		# 	value -= (1 << 15)
 		# print(lsb, msb, value)
 		return value
 

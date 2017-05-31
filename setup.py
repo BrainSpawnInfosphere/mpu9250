@@ -34,7 +34,7 @@ setup(
 	license='MIT',
 	keywords=['raspberry', 'pi', '', 'mpu9250', 'imu', 'i2c'],
 	packages=[PACKAGE_NAME],
-	install_requires=['build_utils'],
+	install_requires=['build_utils', 'smbus2'],
 	cmdclass={
 		'make': BuildCommand,
 		'publish': PublishCommand
