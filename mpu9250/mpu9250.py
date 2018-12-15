@@ -10,6 +10,7 @@ except ImportError:
 
 from time import sleep
 import struct
+import ctypes # for signed int
 
 # Todo:
 # - replace all read* with the block read?
@@ -54,7 +55,9 @@ AK8963_CNTL1 = 0x0A
 AK8963_CNTL2 = 0x0B
 AK8963_ASAX  = 0x10
 AK8963_ST1   = 0x02
-
+AK8963_ST2   = 0x09
+AK8963_ASTC  = 0x0C
+ASTC_SELF    = 0x01<<6
 
 class mpu9250(object):
 	def __init__(self, bus=1):
@@ -97,13 +100,13 @@ class mpu9250(object):
 		ret = self.read8(AK8963_ADDRESS, AK_WHO_AM_I)
 		if ret is not AK_DEVICE_ID:
 			raise Exception('AK8963: init failed to find device')
-		self.write(AK8963_ADDRESS, AK8963_CNTL1, (AK8963_16BIT | AK8963_8HZ))
-
-		# all 3 are set to 16b or 14b readings, we have take half, so one bit is
-		# removed 16 -> 15 or 13 -> 14
-		self.alsb = 2 / 2**15
-		self.glsb = 250 / 2**15
-		self.mlsb = 4800 / 2**15
+		self.write(AK8963_ADDRESS, AK8963_CNTL1, (AK8963_16BIT | AK8963_8HZ)) # cont mode 1
+		self.write(AK8963_ADDRESS, AK8963_ASTC, 0)
+		
+		#normalization coefficients 
+		self.alsb = 2.0 / 32760 # ACCEL_2G
+		self.glsb = 250.0 / 32760 # GYRO_250DPS
+		self.mlsb = 4800.0 / 32760 # MAGNET range +-4800
 
 		# i think i can do this???
 		# self.convv = struct.Struct('<hhh')
@@ -137,7 +140,7 @@ class mpu9250(object):
 		y = self.conv(data[2], data[3]) * lsb
 		z = self.conv(data[4], data[5]) * lsb
 
-		print('>> data', data)
+		#print('>> data', data)
 		# ans = self.convv.unpack(*data)
 		# ans = struct.unpack('<hhh', data)[0]
 		# print('func', x, y, z)
@@ -146,14 +149,9 @@ class mpu9250(object):
 		return (x, y, z)
 
 	def conv(self, msb, lsb):
-		"""
-		http://stackoverflow.com/questions/26641664/twos-complement-of-hex-number-in-python
-		"""
 		value = lsb | (msb << 8)
-		# if value >= (1 << 15):
-		# 	value -= (1 << 15)
-		# print(lsb, msb, value)
-		return value
+		
+		return ctypes.c_short(value).value
 
 	@property
 	def accel(self):
@@ -168,13 +166,20 @@ class mpu9250(object):
 		"""
 		Returns chip temperature in C
 
-		pg 33 datasheet:
+		pg 33 reg datasheet:
+		pg 12 mpu datasheet:
+		Temp_room 21
+		Temp_Sensitivity 333.87
 		Temp_degC = ((Temp_out - Temp_room)/Temp_Sensitivity) + 21 degC
 		"""
 		temp_out = self.read16(MPU9250_ADDRESS, TEMP_DATA)
-		temp = temp_out / 333.87 + 21.0  # these are from the datasheets
+		temp = ((temp_out -21.0)/ 333.87)+21.0 # these are from the datasheets
+		
 		return temp
 
 	@property
 	def mag(self):
-		return self.read_xyz(AK8963_ADDRESS, MAGNET_DATA, self.mlsb)
+		data=self.read_xyz(AK8963_ADDRESS, MAGNET_DATA, self.mlsb)
+		self.read8(AK8963_ADDRESS,AK8963_ST2) # needed step for reading magnetic data
+		return data
+	
