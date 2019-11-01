@@ -148,6 +148,19 @@ class mpu9250(object):
 
 		return (x, y, z)
 
+	def read_xyz_le(self, address, register, lsb):
+		"""
+		Reads x, y, and z axes at once and turns them into a tuple.
+		Little endian version
+		"""
+		data = self.bus.read_i2c_block_data(address, register, 6)
+
+		x = self.conv(data[1], data[0]) * lsb
+		y = self.conv(data[3], data[2]) * lsb
+		z = self.conv(data[5], data[4]) * lsb
+
+		return (x, y, z)
+
 	def conv(self, msb, lsb):
 		value = lsb | (msb << 8)
 		
@@ -179,7 +192,7 @@ class mpu9250(object):
 
 	@property
 	def mag(self):
-		data=self.read_xyz(AK8963_ADDRESS, MAGNET_DATA, self.mlsb)
+		data=self.read_xyz_le(AK8963_ADDRESS, MAGNET_DATA, self.mlsb)
 		self.read8(AK8963_ADDRESS,AK8963_ST2) # needed step for reading magnetic data
 		return data
 	
